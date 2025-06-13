@@ -54,22 +54,40 @@ const CameraApp = () => {
   }, []);
 
   const captureImage = () => {
-    if (!videoRef.current) return;
+  try {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const originalWidth = video.videoWidth;
+    const originalHeight = video.videoHeight;
+
+    const MAX_WIDTH = 720;
+    const scale = originalWidth > MAX_WIDTH ? MAX_WIDTH / originalWidth : 1;
+
     const canvas = document.createElement("canvas");
-    canvas.width = videoRef.current.videoWidth;
-    canvas.height = videoRef.current.videoHeight;
+    canvas.width = originalWidth * scale;
+    canvas.height = originalHeight * scale;
+
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    ctx.drawImage(videoRef.current, 0, 0);
-    const imageData = canvas.toDataURL("image/jpeg", 0.95);
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
+    const imageData = canvas.toDataURL("image/jpeg", 0.9);
+    
     const updated = [...capturedImages];
     updated[selectedView] = imageData;
     setCapturedImages(updated);
 
+    
     if (selectedView < 1) setSelectedView(selectedView + 1);
-  };
+  } catch (err) {
+    console.error("Capture failed:", err);
+    setToastMessage("Capture failed on this device ❌");
+    setTimeout(() => setToastMessage(null), 3000);
+  }
+};
+
 
   const uploadImages = async () => {
     const validImages = capturedImages.filter(Boolean);
