@@ -1,11 +1,18 @@
 import CameraApp from "./CameraApp"
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import GalleryPage from "./GalleryPage";
 
-function App() {
+const App = () => {
 
 
   return (
-    <CameraApp />
-    )
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<CameraApp />} />
+        <Route path="/gallery" element={<GalleryPage />} />
+      </Routes>
+    </BrowserRouter>
+  )
 }
 
 export default App
