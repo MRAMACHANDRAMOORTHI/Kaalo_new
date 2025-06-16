@@ -5,14 +5,12 @@ import { db } from "./firbaseConfig";
 const CameraApp = () => {
   const [selectedView, setSelectedView] = useState(0);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [capturedImages, setCapturedImages] = useState<(string | null)[]>([
-    null,
-    null,
-  ]);
+  const [capturedImages, setCapturedImages] = useState<(string | null)[]>([null, null]);
   const [uploading, setUploading] = useState(false);
-  const [viewStates, setViewStates] = useState<
-    ["unclicked" | "preview" | "captured", "unclicked" | "preview" | "captured"]
-  >(["unclicked", "unclicked"]);
+  const [viewStates, setViewStates] = useState<[
+    "unclicked" | "preview" | "captured",
+    "unclicked" | "preview" | "captured"
+  ]>(["unclicked", "unclicked"]);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -63,10 +61,7 @@ const CameraApp = () => {
       const updated = [...capturedImages];
       updated[selectedView] = imageData;
       setCapturedImages(updated);
-      const updatedStates = [...viewStates] as [
-        "unclicked" | "preview" | "captured",
-        "unclicked" | "preview" | "captured"
-      ];
+      const updatedStates = [...viewStates] as ["unclicked" | "preview" | "captured", "unclicked" | "preview" | "captured"];
       updatedStates[selectedView] = "captured";
       setViewStates(updatedStates);
       if (selectedView < 1) setSelectedView(selectedView + 1);
@@ -115,10 +110,7 @@ const CameraApp = () => {
   const handleViewClick = async (index: number) => {
     const currentState = viewStates[index];
     if (currentState === "unclicked") {
-      const updatedStates = [...viewStates] as [
-        "unclicked" | "preview" | "captured",
-        "unclicked" | "preview" | "captured"
-      ];
+      const updatedStates = [...viewStates] as ["unclicked" | "preview" | "captured", "unclicked" | "preview" | "captured"];
       updatedStates[index] = "preview";
       setViewStates(updatedStates);
       setSelectedView(index);
@@ -131,8 +123,7 @@ const CameraApp = () => {
   const getButtonImage = (index: number) => {
     const state = viewStates[index];
     if (state === "unclicked") return `/View ${index + 1}_ Open_Unselect.png`;
-    if (state === "preview")
-      return `/View ${index + 1}_ Open_Select_with Capture.png`;
+    if (state === "preview") return `/View ${index + 1}_ Open_Select_with Capture.png`;
     return `/View ${index + 1}_ Open_Select.png`;
   };
 
@@ -150,16 +141,8 @@ const CameraApp = () => {
           className="w-full h-full object-cover"
         />
         <div className="absolute top-0 left-0 w-full flex justify-between items-start px-3 py-2">
-          <img
-            src="/DARA.png"
-            alt="Logo"
-            className="w-12 h-12 object-contain"
-          />
-          <img
-            src="/MaskGroup.png"
-            alt="Close"
-            className="w-6 h-6 object-contain"
-          />
+          <img src="/DARA.png" alt="Logo" className="w-12 h-12 object-contain" />
+          <img src="/MaskGroup.png" alt="Close" className="w-6 h-6 object-contain" />
         </div>
         <div className="absolute bottom-4 left-4 bg-black bg-opacity-60 text-white px-3 py-1 rounded-full text-sm">
           View {selectedView + 1} of 2
@@ -192,16 +175,10 @@ const CameraApp = () => {
             disabled={!isUploadReady || uploading}
             onClick={uploadImages}
             className={`transition-opacity ${
-              isUploadReady && !uploading
-                ? "opacity-100"
-                : "opacity-50 cursor-not-allowed"
+              isUploadReady && !uploading ? "opacity-100" : "opacity-50 cursor-not-allowed"
             }`}
           >
-            <img
-              src="/Upload_button.png"
-              alt="Upload"
-              className="h-12 object-contain"
-            />
+            <img src="/Upload_button.png" alt="Upload" className="h-12 object-contain" />
           </button>
         </div>
 
@@ -213,9 +190,7 @@ const CameraApp = () => {
               ? "Tap View 2 to capture image2"
               : "Ready to upload!"}
           </p>
-          <p className="text-blue-100 text-xs mt-1">
-            {capturedCount}/2 images captured
-          </p>
+          <p className="text-blue-100 text-xs mt-1">{capturedCount}/2 images captured</p>
         </div>
       </div>
 
@@ -223,10 +198,7 @@ const CameraApp = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/30">
           <div className="bg-white text-black rounded-xl shadow-lg px-6 py-4 max-w-xs text-center space-y-3">
             <p className="text-base font-medium">{toastMessage}</p>
-            <a
-              href="/gallery"
-              className="text-sm text-blue-600 font-semibold underline"
-            >
+            <a href="/gallery" className="text-sm text-blue-600 font-semibold underline">
               Go to Gallery
             </a>
           </div>
