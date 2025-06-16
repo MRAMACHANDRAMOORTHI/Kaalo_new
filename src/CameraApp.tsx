@@ -7,74 +7,82 @@ const CameraApp = () => {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [capturedImages, setCapturedImages] = useState<(string | null)[]>([null, null]);
   const [uploading, setUploading] = useState(false);
-  const [viewStates, setViewStates] = useState<[
-    "unclicked" | "preview" | "captured",
-    "unclicked" | "preview" | "captured"
-  ]>(["unclicked", "unclicked"]);
+  const [viewStates, setViewStates] = useState<["unclicked" | "preview" | "captured", "unclicked" | "preview" | "captured"]>(["unclicked", "unclicked"]);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  const startCamera = async () => {
-    try {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        alert("Camera not supported in this browser.");
-        return;
-      }
-
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { exact: "environment" } },
-        audio: false,
-      });
-
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
-    } catch (error) {
-      console.error("Camera Error:", error);
-      alert("Camera not accessible. Error: " + (error as Error).message);
-    }
-  };
-
   useEffect(() => {
+    const startCamera = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: { ideal: "environment" },
+            width: { ideal: 1920 },
+            height: { ideal: 1080 },
+          },
+          audio: false,
+        });
+        streamRef.current = stream;
+
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.onloadedmetadata = () => {
+            videoRef.current?.play().catch((e) => {
+              console.error("Video play error:", e);
+            });
+          };
+        }
+      } catch (error) {
+        console.error("Camera Error:", error);
+        setToastMessage("Camera not accessible ❌");
+        setTimeout(() => setToastMessage(null), 3000);
+      }
+    };
+
+    startCamera();
+
     return () => {
       streamRef.current?.getTracks().forEach((track) => track.stop());
     };
   }, []);
 
   const captureImage = () => {
-    try {
-      const video = videoRef.current;
-      if (!video) return;
-      const originalWidth = video.videoWidth;
-      const originalHeight = video.videoHeight;
-      const MAX_WIDTH = 720;
-      const scale = originalWidth > MAX_WIDTH ? MAX_WIDTH / originalWidth : 1;
-      const canvas = document.createElement("canvas");
-      canvas.width = originalWidth * scale;
-      canvas.height = originalHeight * scale;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const imageData = canvas.toDataURL("image/jpeg", 0.9);
-      const updated = [...capturedImages];
-      updated[selectedView] = imageData;
-      setCapturedImages(updated);
-      const updatedStates = [...viewStates] as ["unclicked" | "preview" | "captured", "unclicked" | "preview" | "captured"];
-      updatedStates[selectedView] = "captured";
-      setViewStates(updatedStates);
-      if (selectedView < 1) setSelectedView(selectedView + 1);
-    } catch (err) {
-      console.error("Capture failed:", err);
-      setToastMessage("Capture failed on this device ❌");
-      setTimeout(() => setToastMessage(null), 3000);
-    }
+    const video = videoRef.current;
+    if (!video) return;
+
+    const originalWidth = video.videoWidth;
+    const originalHeight = video.videoHeight;
+    const MAX_WIDTH = 720;
+    const scale = originalWidth > MAX_WIDTH ? MAX_WIDTH / originalWidth : 1;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = originalWidth * scale;
+    canvas.height = originalHeight * scale;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    const imageData = canvas.toDataURL("image/jpeg", 0.9);
+    const updated = [...capturedImages];
+    updated[selectedView] = imageData;
+    setCapturedImages(updated);
+
+    const updatedStates = [...viewStates] as [
+      "unclicked" | "preview" | "captured",
+      "unclicked" | "preview" | "captured"
+    ];
+    updatedStates[selectedView] = "captured";
+    setViewStates(updatedStates);
+
+    if (selectedView < 1) setSelectedView(selectedView + 1);
   };
 
   const uploadImages = async () => {
     const validImages = capturedImages.filter(Boolean);
     if (validImages.length < 2) return;
+
     setUploading(true);
     try {
       const timestamp = Date.now();
@@ -83,9 +91,9 @@ const CameraApp = () => {
         sessionId,
         timestamp,
         createdAt: new Date(),
-        view1: capturedImages[0] || null,
-        view2: capturedImages[1] || null,
-        imageCount: validImages.length,
+        view1: capturedImages[0],
+        view2: capturedImages[1],
+        imageCount: 2,
         deviceInfo: {
           userAgent: navigator.userAgent,
           platform: navigator.platform,
@@ -94,27 +102,28 @@ const CameraApp = () => {
       };
       await addDoc(collection(db, "captured_images"), docData);
       setToastMessage("Upload successful ✅");
-      setTimeout(() => setToastMessage(null), 3000);
       setCapturedImages([null, null]);
       setViewStates(["unclicked", "unclicked"]);
       setSelectedView(0);
     } catch (error) {
-      console.error("Upload Error Details:", error);
+      console.error("Upload Error:", error);
       setToastMessage("Upload failed ❌");
-      setTimeout(() => setToastMessage(null), 3000);
     } finally {
+      setTimeout(() => setToastMessage(null), 3000);
       setUploading(false);
     }
   };
 
-  const handleViewClick = async (index: number) => {
+  const handleViewClick = (index: number) => {
     const currentState = viewStates[index];
     if (currentState === "unclicked") {
-      const updatedStates = [...viewStates] as ["unclicked" | "preview" | "captured", "unclicked" | "preview" | "captured"];
+      const updatedStates = [...viewStates] as [
+        "unclicked" | "preview" | "captured",
+        "unclicked" | "preview" | "captured"
+      ];
       updatedStates[index] = "preview";
       setViewStates(updatedStates);
       setSelectedView(index);
-      await startCamera();
     } else if (currentState === "preview") {
       captureImage();
     }
@@ -127,8 +136,7 @@ const CameraApp = () => {
     return `/View ${index + 1}_ Open_Select.png`;
   };
 
-  const capturedCount = capturedImages.filter(Boolean).length;
-  const isUploadReady = capturedCount === 2;
+  const isUploadReady = capturedImages.every(Boolean);
 
   return (
     <section className="flex flex-col h-screen w-screen overflow-hidden bg-black">
@@ -136,8 +144,8 @@ const CameraApp = () => {
         <video
           ref={videoRef}
           autoPlay
-          playsInline
           muted
+          playsInline
           className="w-full h-full object-cover"
         />
         <div className="absolute top-0 left-0 w-full flex justify-between items-start px-3 py-2">
@@ -157,7 +165,7 @@ const CameraApp = () => {
               <div key={index} className="flex flex-col items-center">
                 <div
                   onClick={() => handleViewClick(index)}
-                  className="relative w-[40px] h-[56px] sm:w-[40px] sm:h-[56px] cursor-pointer overflow-hidden"
+                  className="relative w-[25px] h-[56px] sm:w-[25px] sm:h-[56px] cursor-pointer overflow-hidden"
                 >
                   <img
                     src={src}
@@ -175,7 +183,9 @@ const CameraApp = () => {
             disabled={!isUploadReady || uploading}
             onClick={uploadImages}
             className={`transition-opacity ${
-              isUploadReady && !uploading ? "opacity-100" : "opacity-50 cursor-not-allowed"
+              isUploadReady && !uploading
+                ? "opacity-100"
+                : "opacity-50 cursor-not-allowed"
             }`}
           >
             <img src="/Upload_button.png" alt="Upload" className="h-12 object-contain" />
@@ -184,13 +194,13 @@ const CameraApp = () => {
 
         <div className="flex flex-col items-end text-right">
           <p className="text-white text-sm font-medium">
-            {capturedCount === 0
-              ? "Tap View 1 to capture image1"
-              : capturedCount === 1
-              ? "Tap View 2 to capture image2"
-              : "Ready to upload!"}
+            {capturedImages[0] && capturedImages[1]
+              ? "Ready to upload!"
+              : `Tap View ${capturedImages[0] ? 2 : 1} to capture`}
           </p>
-          <p className="text-blue-100 text-xs mt-1">{capturedCount}/2 images captured</p>
+          <p className="text-blue-100 text-xs mt-1">
+            {capturedImages.filter(Boolean).length}/2 images captured
+          </p>
         </div>
       </div>
 
