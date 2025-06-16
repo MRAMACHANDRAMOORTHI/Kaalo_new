@@ -164,7 +164,7 @@ const CameraApp = () => {
         <div className="absolute -top-10 left-1/2 -translate-x-1/2 flex gap-3 sm:gap-5">
           {[0, 1].map((index) => {
             const src = getButtonImage(index);
-            const isCapturePreview = src.includes("with Capture");
+            src.includes("with Capture");
 
             return (
               <div key={index} className="flex flex-col items-center">
