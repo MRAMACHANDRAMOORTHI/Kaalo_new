@@ -17,24 +17,29 @@ const CameraApp = () => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  useEffect(() => {
-    const startCamera = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: "environment",
-            width: { ideal: 1920 },
-            height: { ideal: 1080 },
-          },
-          audio: false,
-        });
-        streamRef.current = stream;
-        if (videoRef.current) videoRef.current.srcObject = stream;
-      } catch (error) {
-        console.error("Camera Error:", error);
+  const startCamera = async () => {
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert("Camera not supported in this browser.");
+        return;
       }
-    };
-    startCamera();
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { exact: "environment" } },
+        audio: false,
+      });
+
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (error) {
+      console.error("Camera Error:", error);
+      alert("Camera not accessible. Error: " + (error as Error).message);
+    }
+  };
+
+  useEffect(() => {
     return () => {
       streamRef.current?.getTracks().forEach((track) => track.stop());
     };
@@ -107,7 +112,7 @@ const CameraApp = () => {
     }
   };
 
-  const handleViewClick = (index: number) => {
+  const handleViewClick = async (index: number) => {
     const currentState = viewStates[index];
     if (currentState === "unclicked") {
       const updatedStates = [...viewStates] as [
@@ -117,6 +122,7 @@ const CameraApp = () => {
       updatedStates[index] = "preview";
       setViewStates(updatedStates);
       setSelectedView(index);
+      await startCamera();
     } else if (currentState === "preview") {
       captureImage();
     }
@@ -164,18 +170,16 @@ const CameraApp = () => {
         <div className="absolute -top-10 left-1/2 -translate-x-1/2 flex gap-3 sm:gap-5">
           {[0, 1].map((index) => {
             const src = getButtonImage(index);
-            src.includes("with Capture");
-
             return (
               <div key={index} className="flex flex-col items-center">
                 <div
                   onClick={() => handleViewClick(index)}
-                  className="relative w-[25px] h-[56px] sm:w-[25px] sm:h-[56px] cursor-pointer overflow-hidden"
+                  className="relative w-[40px] h-[56px] sm:w-[40px] sm:h-[56px] cursor-pointer overflow-hidden"
                 >
                   <img
                     src={src}
                     alt={`View ${index + 1}`}
-                    className={`absolute bottom-0 w-full object-contain transition-all duration-300`}
+                    className="absolute bottom-0 w-full object-contain transition-all duration-300"
                   />
                 </div>
               </div>
